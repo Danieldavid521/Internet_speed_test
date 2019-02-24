@@ -1,0 +1,68 @@
+---
+title: "Internet_Speed_Test"
+author: "DanielDavid521"
+date: "November 26, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE, echo = FALSE, warning = FALSE}
+library(speedtest)
+library(stringi) 
+library(hrbrthemes)
+library(ggbeeswarm) 
+library(tidyverse)
+library(ggmap)
+library(rworldmap)
+library(rworldxtra)
+library(dplyr)
+library(plyr)
+
+```
+Please click [here](https://www.r-bloggers.com/measuring-monitoring-internet-speed-with-r/) to see the original article
+```{r message=FALSE, echo = FALSE}
+
+#speedtest getting servers
+
+config <- spd_config()
+servers <- spd_servers(config=config)
+closest_servers <- spd_closest_servers(servers, config=config) 
+only_the_best_severs <- spd_best_servers(closest_servers, config)
+```
+
+
+```{r echo=FALSE, message=FALSE}
+
+#setting up what servers were the best
+bind_rows(
+  closest_servers[1:3,] %>%
+    mutate(type="closest"),
+  only_the_best_severs[1:3,] %>%
+    mutate(type="best"),
+  filter(servers, !(id %in% c(closest_servers[1:3,]$id, only_the_best_severs[1:3,]$id))) %>%
+    sample_n(3) %>%
+    mutate(type="random")
+) %>%
+  group_by(type) %>%
+  ungroup() -> to_compare
+
+#column picking
+bestselect <- select(to_compare, sponsor, name, country, host, type, lat, lng)
+#turning class to data frame
+dfbestselect <- as.data.frame(bestselect)
+
+```
+
+
+```{r echo=TRUE, message=FALSE}
+
+#visualizing the server points
+mapWorld <- borders("world", colour="red", fill="black") # create a layer of borders
+mp <- ggplot() +   mapWorld
+mp + geom_point(data = servers, aes(x = lng, y = lat), colour = "yellow")
+```
+
